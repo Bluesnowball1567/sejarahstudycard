@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Check, X, ArrowLeft, RotateCcw, Trophy, Home, Loader2 } from 'lucide-react';
-import tailwindcss from '@tailwindcss/vite'
+
+// 注意：这里移除了无效的 @tailwindcss/vite 和 autoprefixer 导入，这些会导致 JS 报错。
 
 const SYLLABUS = {
   form4: {
@@ -23,7 +24,7 @@ const SYLLABUS = {
 
 const App = () => {
   const [page, setPage] = useState('home'); 
-  const [questionsDb, setQuestionsDb] = useState({}); // 存储从 JSON 加载的数据
+  const [questionsDb, setQuestionsDb] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [activeUnitId, setActiveUnitId] = useState(null);
   const [unitName, setUnitName] = useState("");
@@ -31,34 +32,43 @@ const App = () => {
   const [showAnswer, setShowAnswer] = useState(false);
   const [scores, setScores] = useState([]); 
 
-  // --- 新增：从外部 JSON 加载题目 ---
   useEffect(() => {
-    // 这里的路径需要根据你的 GitHub 仓库名调整
-    // 如果仓库名是 sejarah-flashcards，路径通常是 '/sejarah-flashcards/data.json'
-    const jsonPath = window.location.pathname.includes('github.io') 
-      ? `/${window.location.pathname.split('/')[1]}/data.json` 
-      : '/data.json';
+    const loadData = async () => {
+      try {
+        let jsonPath = 'data.json';
+        const { hostname, pathname, protocol } = window.location;
 
-    fetch(jsonPath)
-      .then(res => {
-        if (!res.ok) throw new Error("无法加载题目文件");
-        return res.json();
-      })
-      .then(data => {
-        setQuestionsDb(data);
+        if (hostname.includes('github.io')) {
+          const pathSegments = pathname.split('/').filter(Boolean);
+          jsonPath = pathSegments.length > 0 ? `/${pathSegments[0]}/data.json` : '/data.json';
+        } else if (protocol === 'http:' || protocol === 'https:') {
+          if (!hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
+            jsonPath = '/data.json';
+          }
+        }
+        
+        const response = await fetch(jsonPath);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const dataJson = await response.json();
+        setQuestionsDb(dataJson);
+      } catch (err) {
+        console.error("Failed to fetch data.json:", err);
+        setQuestionsDb({});
+      } finally {
         setIsLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setIsLoading(false);
-      });
+      }
+    };
+    
+    loadData();
   }, []);
 
   const currentQuestions = useMemo(() => {
-    return questionsDb[activeUnitId] || [{ q: "此单元题目尚未准备好", a: "请检查 data.json 是否包含此单元。" }];
+    if (!activeUnitId || !questionsDb[activeUnitId]) {
+      return [{ q: "此单元题目尚未准备好", a: "请检查 data.json 是否包含此单元。" }];
+    }
+    return questionsDb[activeUnitId];
   }, [questionsDb, activeUnitId]);
 
-  // --- 逻辑函数 ---
   const handleNext = (isCorrect = null) => {
     let newScores = [...scores];
     if (isCorrect !== null) {
@@ -89,10 +99,9 @@ const App = () => {
     setPage('study');
   };
 
-  // --- 视图组件 ---
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <Loader2 className="animate-spin text-gray-400" size={32} />
       </div>
     );
@@ -102,7 +111,7 @@ const App = () => {
     return (
       <div className="min-h-screen bg-white text-gray-900 p-6 md:p-12 font-sans">
         <header className="max-w-5xl mx-auto mb-20 border-l-2 border-black pl-8">
-          <h1 className="text-4xl font-light tracking-[0.25em] uppercase leading-tight">Sejarah<br/>Flashcards</h1>
+          <h1 className="text-4xl font-light tracking-[0.25em] uppercase leading-tight">Sejarah<br />Flashcards</h1>
           <p className="text-gray-400 text-xs mt-4 tracking-widest uppercase font-bold">SPM Syllabus Reference</p>
         </header>
         <main className="max-w-5xl mx-auto grid md:grid-cols-2 gap-20">
@@ -111,13 +120,13 @@ const App = () => {
               <h2 className="text-xs font-black tracking-[0.3em] text-gray-300 uppercase mb-8 group-hover:text-black transition-colors">{data.title}</h2>
               <div className="space-y-1">
                 {data.chapters.map((name, i) => (
-                  <button 
+                  <button
                     key={i}
                     onClick={() => startStudy(formKey, i, name)}
-                    className="w-full flex items-center justify-between p-4 border border-transparent border-b-gray-100 hover:border-black hover:bg-black hover:text-white transition-all duration-200"
+                    className="w-full flex items-center justify-between p-4 border border-transparent border-b-gray-100 hover:border-black hover:bg-black hover:text-white transition-all duration-200 text-left"
                   >
                     <div className="flex items-center space-x-4 overflow-hidden">
-                      <span className="text-[10px] font-mono opacity-50">{(i+1).toString().padStart(2, '0')}</span>
+                      <span className="text-[10px] font-mono opacity-50">{(i + 1).toString().padStart(2, '0')}</span>
                       <span className="text-sm truncate font-medium uppercase tracking-tight">{name}</span>
                     </div>
                     <ChevronRight size={14} />
@@ -137,8 +146,8 @@ const App = () => {
     const percentage = Math.round((correctCount / totalCount) * 100);
 
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 animate-in zoom-in duration-500 text-center">
-        <div className="max-w-sm w-full space-y-8">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-sm w-full space-y-8 animate-in zoom-in duration-500">
           <Trophy size={48} className="mx-auto text-gray-800" />
           <div>
             <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-gray-400 mb-2">Unit Completed</h2>
@@ -148,7 +157,7 @@ const App = () => {
             <div className="text-5xl font-light mb-2">{percentage}%</div>
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Mastery Level</p>
           </div>
-          <button onClick={() => setPage('home')} className="w-full py-4 bg-black text-white text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center space-x-3 rounded-sm">
+          <button onClick={() => setPage('home')} className="w-full py-4 bg-black text-white text-[10px] font-black uppercase tracking-[0.3em] flex items-center justify-center space-x-3 rounded-sm hover:bg-gray-800 transition-colors">
             <Home size={14} />
             <span>Return to Menu</span>
           </button>
@@ -158,17 +167,17 @@ const App = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans animate-in fade-in duration-500">
+    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <nav className="p-6 flex items-center justify-between bg-white border-b border-gray-100">
-        <button onClick={() => setPage('home')} className="flex items-center text-gray-400 hover:text-black">
+        <button onClick={() => setPage('home')} className="flex items-center text-gray-400 hover:text-black transition-colors">
           <ArrowLeft size={18} />
-          <span className="text-xs font-bold uppercase ml-2">Back</span>
+          <span className="text-xs font-bold uppercase ml-2 tracking-widest">Back</span>
         </button>
         <div className="text-center">
           <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Studying</p>
           <p className="text-xs font-bold uppercase truncate max-w-[150px]">{unitName}</p>
         </div>
-        <button onClick={() => {setCurrentIndex(0); setShowAnswer(false); setScores([]);}} className="text-gray-400">
+        <button onClick={() => { setCurrentIndex(0); setShowAnswer(false); setScores([]); } } className="text-gray-400 hover:text-black">
           <RotateCcw size={16} />
         </button>
       </nav>
@@ -178,14 +187,24 @@ const App = () => {
           <button onClick={handlePrev} disabled={currentIndex === 0} className={`absolute -left-20 top-1/2 -translate-y-1/2 p-4 text-gray-200 hover:text-black hidden lg:block ${currentIndex === 0 ? 'opacity-0' : ''}`}>
             <ChevronLeft size={60} strokeWidth={1} />
           </button>
-          <div onClick={() => setShowAnswer(!showAnswer)} className="w-full aspect-[3/4] md:aspect-[4/3] bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center p-8 text-center cursor-pointer select-none active:scale-95 transition-all">
+          
+          <div 
+            onClick={() => setShowAnswer(!showAnswer)} 
+            className="w-full aspect-[3/4] md:aspect-[4/3] bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center p-8 text-center cursor-pointer select-none active:scale-95 transition-all duration-300 hover:shadow-md"
+          >
             <div className={`mb-10 text-[10px] font-black uppercase tracking-[0.4em] ${showAnswer ? 'text-blue-500' : 'text-gray-300'}`}>
               {showAnswer ? "Answer" : "Question"}
             </div>
-            <p className={`text-xl md:text-2xl font-light leading-relaxed ${showAnswer ? 'text-gray-600' : 'text-gray-900'}`}>
-              {showAnswer ? currentQuestions[currentIndex].a : currentQuestions[currentIndex].q}
-            </p>
+            <div className="flex-1 flex items-center justify-center">
+              <p className={`text-xl md:text-2xl font-light leading-relaxed ${showAnswer ? 'text-gray-600' : 'text-gray-900'}`}>
+                {showAnswer ? currentQuestions[currentIndex].a : currentQuestions[currentIndex].q}
+              </p>
+            </div>
+            <div className="mt-8 text-[9px] text-gray-200 font-bold uppercase tracking-[0.2em]">
+              Tap to Flip
+            </div>
           </div>
+
           <button onClick={() => handleNext(null)} disabled={currentIndex === currentQuestions.length - 1} className={`absolute -right-20 top-1/2 -translate-y-1/2 p-4 text-gray-200 hover:text-black hidden lg:block ${currentIndex === currentQuestions.length - 1 ? 'opacity-0' : ''}`}>
             <ChevronRight size={60} strokeWidth={1} />
           </button>
@@ -193,19 +212,19 @@ const App = () => {
 
         <div className="w-full mt-12 space-y-10">
           <div className="flex justify-between px-2 items-center text-gray-400 font-bold text-[10px] uppercase tracking-tighter">
-            <button onClick={handlePrev} className={currentIndex === 0 ? 'invisible' : ''}>Prev</button>
-            <span className="bg-gray-200 text-gray-600 px-3 py-1 rounded-full">{currentIndex + 1} / {currentQuestions.length}</span>
-            <button onClick={() => handleNext(null)} className={currentIndex === currentQuestions.length - 1 ? 'invisible' : ''}>Next</button>
+            <button onClick={handlePrev} className={currentIndex === 0 ? 'invisible' : 'hover:text-black'}>Prev</button>
+            <span className="bg-gray-200 text-gray-600 px-3 py-1 rounded-full font-mono">{currentIndex + 1} / {currentQuestions.length}</span>
+            <button onClick={() => handleNext(null)} className={currentIndex === currentQuestions.length - 1 ? 'invisible' : 'hover:text-black'}>Next</button>
           </div>
           <div className="flex justify-center space-x-16">
             <button onClick={() => handleNext(false)} className="group flex flex-col items-center space-y-2">
-              <div className="w-16 h-16 rounded-full border border-gray-100 flex items-center justify-center text-gray-300 group-hover:text-red-500 group-hover:border-red-500 transition-all">
+              <div className="w-16 h-16 rounded-full border border-gray-100 flex items-center justify-center text-gray-300 group-hover:text-red-500 group-hover:border-red-500 group-hover:bg-red-50 transition-all">
                 <X size={24} />
               </div>
               <span className="text-[9px] font-black uppercase text-gray-300 group-hover:text-red-500">Again</span>
             </button>
             <button onClick={() => handleNext(true)} className="group flex flex-col items-center space-y-2">
-              <div className="w-16 h-16 rounded-full border border-gray-100 flex items-center justify-center text-gray-300 group-hover:text-green-500 group-hover:border-green-500 transition-all">
+              <div className="w-16 h-16 rounded-full border border-gray-100 flex items-center justify-center text-gray-300 group-hover:text-green-500 group-hover:border-green-500 group-hover:bg-green-50 transition-all">
                 <Check size={24} />
               </div>
               <span className="text-[9px] font-black uppercase text-gray-300 group-hover:text-green-500">Easy</span>
@@ -213,8 +232,12 @@ const App = () => {
           </div>
         </div>
       </main>
+      
       <div className="w-full h-1 bg-gray-100">
-        <div className="h-full bg-black transition-all duration-500" style={{ width: `${((currentIndex + 1) / currentQuestions.length) * 100}%` }}></div>
+        <div 
+          className="h-full bg-black transition-all duration-500" 
+          style={{ width: `${((currentIndex + 1) / currentQuestions.length) * 100}%` }}
+        ></div>
       </div>
     </div>
   );
