@@ -1,3 +1,21 @@
+/* 1. 引入 Tailwind (如果你本地配置了 v4) */
 @import "tailwindcss";
 
-/* 这样就足够了，v4 不需要 @tailwind base 等指令 */
+/* 2. 彻底清除干扰布局的旧代码 */
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  background-color: #ffffff;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  /* 必须强制取消 Vite 默认的 flex 居中，否则页面会缩成一团 */
+  display: block !important; 
+  min-height: 100vh;
+  width: 100%;
+}
+
+#root {
+  width: 100%;
+}
