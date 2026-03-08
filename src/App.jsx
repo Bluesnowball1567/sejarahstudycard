@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Check, X, ArrowLeft, RotateCcw, Trophy, Home, Loader2 } from 'lucide-react';
-import style from './App.css';
 
 // 注意：这里移除了无效的 @tailwindcss/vite 和 autoprefixer 导入，这些会导致 JS 报错。
 
@@ -33,11 +32,11 @@ const App = () => {
   const [showAnswer, setShowAnswer] = useState(false);
   const [scores, setScores] = useState([]); 
 
-// App.jsx 里的 useEffect 修改为：
+  
 useEffect(() => {
   const loadData = async () => {
     try {
-      // 完美适配本地和 GitHub Pages 的绝对路径获取方式
+      // 使用 import.meta.env.BASE_URL 自动获取 '/sejarah-flashcards/'
       const jsonPath = `${import.meta.env.BASE_URL}data.json`;
       
       const response = await fetch(jsonPath);
@@ -45,7 +44,7 @@ useEffect(() => {
       const dataJson = await response.json();
       setQuestionsDb(dataJson);
     } catch (err) {
-      console.error("Failed to fetch data.json:", err);
+      console.error("无法加载题目文件:", err); // 这就是你控制台看到的报错位置
       setQuestionsDb({});
     } finally {
       setIsLoading(false);
