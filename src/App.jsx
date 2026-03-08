@@ -36,22 +36,24 @@ const App = () => {
 useEffect(() => {
   const loadData = async () => {
     try {
-      // 使用 import.meta.env.BASE_URL 自动获取 '/sejarah-flashcards/'
-      // 这样无论是在本地还是 GitHub Pages 都能准确找到文件
-      const jsonPath = `${import.meta.env.BASE_URL}data.json`;
+      // 这里的关键：使用 './data.json' (注意有个点) 
+      // 或者 `${import.meta.env.BASE_URL}data.json`
+      // 这会告诉浏览器在当前文件夹（即 sejarah-flashcards）下寻找
+      const response = await fetch('./data.json'); 
       
-      const response = await fetch(jsonPath);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`请求失败，状态码: ${response.status}`);
+      }
       const dataJson = await response.json();
       setQuestionsDb(dataJson);
     } catch (err) {
-      console.error("无法加载题目文件，请检查 public/data.json 是否存在:", err);
+      // 打印更详细的错误，方便我们定位
+      console.error("无法加载题目文件，完整路径为:", new URL('./data.json', window.location.href).href);
       setQuestionsDb({});
     } finally {
       setIsLoading(false);
     }
   };
-  
   loadData();
 }, []);
 
