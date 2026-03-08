@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Check, X, ArrowLeft, RotateCcw, Trophy, Home, Loader2 } from 'lucide-react';
+import style from './App.css';
 
 // 注意：这里移除了无效的 @tailwindcss/vite 和 autoprefixer 导入，这些会导致 JS 报错。
 
