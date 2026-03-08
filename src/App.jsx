@@ -32,35 +32,27 @@ const App = () => {
   const [showAnswer, setShowAnswer] = useState(false);
   const [scores, setScores] = useState([]); 
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        let jsonPath = 'data.json';
-        const { hostname, pathname, protocol } = window.location;
-
-        if (hostname.includes('github.io')) {
-          const pathSegments = pathname.split('/').filter(Boolean);
-          jsonPath = pathSegments.length > 0 ? `/${pathSegments[0]}/data.json` : '/data.json';
-        } else if (protocol === 'http:' || protocol === 'https:') {
-          if (!hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
-            jsonPath = '/data.json';
-          }
-        }
-        
-        const response = await fetch(jsonPath);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const dataJson = await response.json();
-        setQuestionsDb(dataJson);
-      } catch (err) {
-        console.error("Failed to fetch data.json:", err);
-        setQuestionsDb({});
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    loadData();
-  }, []);
+// App.jsx 里的 useEffect 修改为：
+useEffect(() => {
+  const loadData = async () => {
+    try {
+      // 完美适配本地和 GitHub Pages 的绝对路径获取方式
+      const jsonPath = `${import.meta.env.BASE_URL}data.json`;
+      
+      const response = await fetch(jsonPath);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const dataJson = await response.json();
+      setQuestionsDb(dataJson);
+    } catch (err) {
+      console.error("Failed to fetch data.json:", err);
+      setQuestionsDb({});
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  loadData();
+}, []);
 
   const currentQuestions = useMemo(() => {
     if (!activeUnitId || !questionsDb[activeUnitId]) {
